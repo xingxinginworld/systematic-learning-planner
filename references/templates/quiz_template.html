@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>摸底测试卷（选择题模板）</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#fff; --ink:#1f2329; --sub:#6b7280;
+    --line:#e5e7eb; --brand:#2563eb; --brand-soft:#eff4ff; --ok:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.6}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 64px}
+  h1{font-size:22px;margin:0 0 4px}
+  .meta{color:var(--sub);font-size:13px;margin-bottom:18px}
+  .tip{background:var(--brand-soft);border:1px solid #dbe6ff;color:#1e40af;
+    padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:18px}
+  .q{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 16px 14px;margin-bottom:14px}
+  .q h3{margin:0 0 10px;font-size:15px}
+  .q h3 .num{display:inline-block;min-width:22px;color:var(--brand);font-weight:700}
+  label.opt{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;
+    border:1px solid var(--line);border-radius:9px;margin-bottom:7px;cursor:pointer;
+    transition:.15s}
+  label.opt:hover{background:var(--brand-soft);border-color:#c7d7ff}
+  label.opt input{margin-top:4px}
+  .bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);
+    padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;
+    box-shadow:0 -4px 14px rgba(0,0,0,.04)}
+  button{flex:1;min-width:140px;border:0;border-radius:10px;padding:12px;
+    font-size:14px;font-weight:600;cursor:pointer}
+  .b-collect{background:var(--brand);color:#fff}
+  .b-copy{background:#0f172a;color:#fff}
+  .b-reset{background:#fff;color:var(--sub);border:1px solid var(--line)}
+  textarea{width:100%;min-height:120px;margin-top:14px;border:1px solid var(--line);
+    border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13px;background:#fbfbfc}
+  .count{font-size:13px;color:var(--sub);margin:6px 0 0}
+  .done{color:var(--ok);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>【主题】摸底测试卷</h1>
+  <div class="meta">目的：测定当前水平，用于生成《摸底评估报告》与路径规划 · 全部为选择题</div>
+  <div class="tip">用法：把下面的示例题替换为你的主题题目；选项用 <code>A/B/C/D</code>。
+    答完后点「一键收集答案」预览，「一键复制答案」复制为纯文本，发回给我即可。</div>
+
+  <div id="quiz"><!-- 题目由下列结构复制扩展；data-ans 为正确选项（仅评估用，不展示） -->
+    <div class="q" data-q="1">
+      <h3><span class="num">1.</span>示例题：下列哪项最贴近【主题】的核心定义？</h3>
+      <label class="opt"><input type="radio" name="q1" value="A"><span>A. 选项一</span></label>
+      <label class="opt"><input type="radio" name="q1" value="B"><span>B. 选项二</span></label>
+      <label class="opt"><input type="radio" name="q1" value="C"><span>C. 选项三</span></label>
+      <label class="opt"><input type="radio" name="q1" value="D"><span>D. 选项四</span></label>
+    </div>
+    <div class="q" data-q="2">
+      <h3><span class="num">2.</span>示例题：在【主题】中，以下哪个环节通常最关键？</h3>
+      <label class="opt"><input type="radio" name="q2" value="A"><span>A. 选项一</span></label>
+      <label class="opt"><input type="radio" name="q2" value="B"><span>B. 选项二</span></label>
+      <label class="opt"><input type="radio" name="q2" value="C"><span>C. 选项三</span></label>
+      <label class="opt"><input type="radio" name="q2" value="D"><span>D. 选项四</span></label>
+    </div>
+  </div>
+
+  <div class="count" id="count">已答 0 / 2</div>
+  <textarea id="out" placeholder="点击「一键收集答案」后，这里会显示可复制的结果文本…"></textarea>
+
+  <div class="bar">
+    <button class="b-collect" onclick="collectAnswers()">一键收集答案</button>
+    <button class="b-copy" onclick="copyAnswers()">一键复制答案</button>
+    <button class="b-reset" onclick="resetAll()">清空重答</button>
+  </div>
+</div>
+
+<script>
+const quiz = document.getElementById('quiz');
+const out  = document.getElementById('out');
+const countEl = document.getElementById('count');
+const total = quiz.querySelectorAll('.q').length;
+
+function updateCount(){
+  let n = 0;
+  quiz.querySelectorAll('.q').forEach(q=>{
+    const name = q.querySelector('input').name;
+    if(document.querySelector(`input[name="${name}"]:checked`)) n++;
+  });
+  countEl.innerHTML = `已答 <b>${n}</b> / ${total}` + (n===total?' <span class="done">✓ 全部完成</span>':'');
+}
+quiz.addEventListener('change', updateCount);
+
+function collectAnswers(){
+  const lines = [];
+  quiz.querySelectorAll('.q').forEach(q=>{
+    const idx = q.dataset.q;
+    const name = q.querySelector('input').name;
+    const sel = document.querySelector(`input[name="${name}"]:checked`);
+    const txt = q.querySelector('h3').innerText.replace(/^\s*\d+\.\s*/, '');
+    lines.push(`Q${idx}. ${txt}`);
+    lines.push(`答：${sel ? sel.value : '（未答）'}`);
+  });
+  out.value = `【摸底测试卷·答案汇总】\n主题：__填写主题__\n日期：__YYYY-MM-DD__\n\n` + lines.join('\n');
+  updateCount();
+  return out.value;
+}
+
+async function copyAnswers(){
+  const text = out.value || collectAnswers();
+  try{
+    await navigator.clipboard.writeText(text);
+    alert('已复制到剪贴板，可直接粘贴发回 👌');
+  }catch(e){
+    out.select(); document.execCommand('copy');
+    alert('已复制（兼容模式）');
+  }
+}
+
+function resetAll(){
+  quiz.querySelectorAll('input').forEach(i=>i.checked=false);
+  out.value=''; updateCount();
+}
+
+updateCount();
+</script>
+</body>
+</html>
