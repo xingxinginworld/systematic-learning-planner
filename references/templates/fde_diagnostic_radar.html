@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE 学习笔记 · Day 0 · FDE 全景 & 你的能力雷达图</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #0b1628 0%, #1e40af 55%, #3b82f6 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14px; opacity: 0.9; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.pipeline { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; align-items: stretch; }
+.pipeline .step { flex: 1; min-width: 100px; background: linear-gradient(135deg, #dbeafe, #eff6ff); border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 8px; text-align: center; font-size: 12px; position: relative; }
+.pipeline .step .idx { display: inline-block; background: var(--primary); color: #fff; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; line-height: 20px; margin-bottom: 4px; }
+.pipeline .step .name { font-weight: 700; font-size: 13px; color: var(--blue-dark); }
+.pipeline .step .pain { font-size: 11px; color: var(--gray-600); margin-top: 3px; line-height: 1.4; }
+
+.dim-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px; padding: 16px 18px; margin: 12px 0; }
+.dim-card .dim-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.dim-card .dim-idx { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; text-align: center; line-height: 28px; font-size: 14px; flex-shrink: 0; }
+.dim-card .dim-name { font-size: 16px; font-weight: 700; color: var(--gray-800); }
+.dim-card .dim-tag { font-size: 11px; color: var(--gray-500); background: var(--gray-100); padding: 2px 8px; border-radius: 10px; margin-left: auto; }
+.dim-card .dim-body { font-size: 14px; color: var(--gray-600); line-height: 1.7; }
+.dim-card .dim-body strong { color: var(--gray-800); }
+
+.scale-guide { background: var(--purple-bg); border-radius: 8px; padding: 12px 14px; margin: 12px 0; font-size: 13px; }
+.scale-guide .row { display: flex; gap: 10px; margin: 4px 0; }
+.scale-guide .row .num { width: 24px; height: 24px; background: var(--purple); color: #fff; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.scale-guide .row .desc { flex: 1; padding-top: 2px; }
+
+.quiz-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-block summary { background: var(--primary-bg); padding: 10px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14px; }
+.quiz-block[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-block .quiz-body { padding: 12px 14px; }
+.question { padding: 10px 0; border-bottom: 1px dashed var(--gray-200); font-size: 14px; }
+.question:last-child { border-bottom: none; }
+.q-text { margin-bottom: 6px; }
+.q-text .idx { color: var(--primary); font-weight: 700; margin-right: 5px; }
+.q-scale { display: flex; gap: 4px; flex-wrap: wrap; }
+.q-scale label { flex: 1; min-width: 44px; text-align: center; padding: 5px 4px; background: var(--gray-100); border-radius: 5px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.q-scale input[type=radio] { display: none; }
+.q-scale input[type=radio]:checked + span { background: var(--primary); color: #fff; padding: 3px 8px; border-radius: 4px; }
+.q-scale label:hover { background: var(--primary-bg); }
+
+.submit-row { text-align: center; padding: 20px 0 10px; }
+.btn { display: inline-block; background: var(--primary); color: #fff; padding: 10px 26px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; margin: 0 5px; }
+.btn:hover { background: var(--blue-dark); }
+.btn.ghost { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+
+#result { display: none; }
+.result-summary { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin: 16px 0; }
+.result-summary .chart-wrap { flex: 0 0 340px; }
+.result-summary .score-list { flex: 1; min-width: 260px; }
+.score-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--gray-200); font-size: 14px; }
+.score-item .lbl { width: 90px; font-weight: 600; }
+.score-item .bar-wrap { flex: 1; background: var(--gray-100); height: 12px; border-radius: 6px; position: relative; overflow: hidden; }
+.score-item .bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 6px; }
+.score-item .val { width: 46px; text-align: right; font-family: monospace; font-weight: 700; color: var(--primary); }
+
+.export-area { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px; margin: 14px 0; }
+.export-area textarea { width: 100%; min-height: 200px; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; padding: 10px; border: 1px solid var(--gray-300); border-radius: 6px; background: #fff; line-height: 1.7; }
+
+.check-list { list-style: none; padding: 0; }
+.check-list li { padding: 6px 0 6px 28px; position: relative; font-size: 14px; }
+.check-list li::before { content: '☐'; position: absolute; left: 4px; top: 6px; color: var(--primary); font-size: 16px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+  .result-summary .chart-wrap { flex: 1 0 100%; }
+  .q-scale label { min-width: 38px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE 学习路径 · Day 0 · 起点校准</div>
+  <h1>📘 FDE 全景 &amp; 你的能力雷达图</h1>
+  <div class="subtitle">先搞清楚"FDE 到底是干嘛的"，再照着七项能力自评一遍——今天不学新东西，只做一件事：<strong>知道你在哪，缺什么</strong>。</div>
+  <div class="hero-meta">
+    <span>🎯 Phase 0 · 起点校准</span>
+    <span>⏱️ 预计 70 分钟</span>
+    <span>🧭 输出：一张雷达图 + 一份个性化路径建议</span>
+  </div>
+  <div class="hero-back">路径规划：本篇是 FDE v2 学习路径的 Day 0，共 6 阶段，路径终稿会根据你今天的自评结果调整。</div>
+</div>
+
+<!-- Card 1: FDE 全景 -->
+<div class="card">
+  <h2>🗺️ 一、FDE 到底是干嘛的？</h2>
+
+  <h3>用一句话说清 FDE</h3>
+  <p>FDE = Forward Deployed Engineer，Palantir 造的词。业内也叫<strong>交付工程师 / 解决方案工程师</strong>。</p>
+  <div class="box box-blue">
+    <div class="box-title">🎯 大白话定义</div>
+    <div>一个能自己下场写代码的项目经理，或者说一个懂业务的工程师。他要去客户现场，把客户的模糊需求变成能跑起来的系统，还得让客户会用、用得爽。</div>
+  </div>
+
+  <h3>跟你熟悉的角色比一比</h3>
+  <table>
+    <thead>
+      <tr><th style="width:22%">角色</th><th style="width:20%">主要战场</th><th style="width:26%">关键能力</th><th>谁负责最终结果</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>PM（你现在）</strong></td><td>会议室 / 需求文档</td><td>沟通、拆解、协调</td><td>项目按时上线</td></tr>
+      <tr><td>开发工程师</td><td>IDE</td><td>写代码、调 bug</td><td>代码质量、性能</td></tr>
+      <tr><td>解决方案架构师</td><td>PPT / 白板</td><td>画架构图、选型</td><td>方案技术合理性</td></tr>
+      <tr><td><strong>FDE（你要变成的）</strong></td><td>客户现场 + IDE</td><td>懂业务 + 能动手改</td><td><strong>端到端交付效果</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>FDE 交付一个 AI 项目的完整链路</h3>
+  <div class="pipeline">
+    <div class="step"><span class="idx">1</span><div class="name">摸需求</div><div class="pain">客户说"我要智能助手"→ 追问真痛点</div></div>
+    <div class="step"><span class="idx">2</span><div class="name">定方案</div><div class="pain">工作流？RAG？Agent？</div></div>
+    <div class="step"><span class="idx">3</span><div class="name">搭原型</div><div class="pain">3 天出个能演示的东西</div></div>
+    <div class="step"><span class="idx">4</span><div class="name">接数据</div><div class="pain">500 个 PDF + 3 个 Excel</div></div>
+    <div class="step"><span class="idx">5</span><div class="name">让它稳</div><div class="pain">Demo 好好的，上线抽风</div></div>
+    <div class="step"><span class="idx">6</span><div class="name">交付培训</div><div class="pain">"这结论怎么来的？"</div></div>
+    <div class="step"><span class="idx">7</span><div class="name">效果迭代</div><div class="pain">Bad Case 闭环，别改坏</div></div>
+  </div>
+
+  <div class="box box-yellow">
+    <div class="box-title">💡 你要记住的核心结论</div>
+    <div>FDE 是<strong>端到端</strong>的负责人。他不是"写更好的代码"，而是"让整条链路真的跑起来、真的解决业务问题"。你 PM 的经验，正好覆盖了链路两头（摸需求、管交付）；要补的是中间那三段（搭原型、让它稳、接数据）。</div>
+  </div>
+</div>
+
+<!-- Card 2: 七项能力详解 -->
+<div class="card">
+  <h2>🧭 二、FDE 七项能力（业务语言版）</h2>
+  <p>下面这七项能力，是我把 FDE 拆解后形成的模型。每项都用"你 PM 时怎么用它"来对照，方便你评估自己的起点。前六项覆盖通用 FDE 场景，第 ⑦ 项是<strong>政企驻场专属</strong>——如果你要做金融/电力/政务/央国企类项目，这一项决定你能不能真正把系统落地。</p>
+
+  <div class="dim-card">
+    <div class="dim-head">
+      <div class="dim-idx">1</div>
+      <div class="dim-name">懂业务</div>
+      <div class="dim-tag">你的强项</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>听懂客户到底要啥，识别他表面话和真痛点的差距，判断这活能不能用 AI 干。</p>
+      <p><strong>PM 时怎么用：</strong>你写 PRD 前要访谈、要画业务流程图、要挖用户 story。这些技能可以直接搬。</p>
+      <p><strong>FDE 要额外会：</strong>多一个判断——"这个需求 AI 到底适不适合做、值不值得做"。有些需求硬上 AI 是灾难。</p>
+    </div>
+  </div>
+
+  <div class="dim-card">
+    <div class="dim-head">
+      <div class="dim-idx">2</div>
+      <div class="dim-name">会翻译</div>
+      <div class="dim-tag">升级项</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>把业务需求翻译成技术方案。选架构（工作流 / RAG / Agent / Multi-Agent）、估成本、算 token 账、画数据流图。</p>
+      <p><strong>PM 时怎么用：</strong>你写过技术方案文档，知道要跟开发对齐术语。</p>
+      <p><strong>FDE 要额外会：</strong>你自己要能画出 Agent 架构图，不能只依赖开发讲给你听。</p>
+    </div>
+  </div>
+
+  <div class="dim-card">
+    <div class="dim-head">
+      <div class="dim-idx">3</div>
+      <div class="dim-name">搭原型</div>
+      <div class="dim-tag">核心新技能</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>1 小时验证一个假设，3 天搭一个能演示的 Demo。会调 LLM API，会写 Prompt，会用 Function Calling，会搭简单 RAG。</p>
+      <p><strong>PM 时怎么用：</strong>基本没用过。你以前是"提需求，等开发交付"。</p>
+      <p><strong>FDE 要额外会：</strong>这是最大的技能跨越——从"能说不能做"到"能自己搭出来给客户看"。</p>
+    </div>
+  </div>
+
+  <div class="dim-card">
+    <div class="dim-head">
+      <div class="dim-idx">4</div>
+      <div class="dim-name">改得动</div>
+      <div class="dim-tag">核心新技能</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>Demo 有 bug 能自己看日志定位。Prompt 效果不好能自己调。小改动不用等开发。看得懂开发的代码。</p>
+      <p><strong>PM 时怎么用：</strong>基本没用过。你以前是"发现问题→提工单→等修复"。</p>
+      <p><strong>FDE 要额外会：</strong>从"发现问题"到"能自己动手改小问题"。Git 基本操作、代码 review 基础、调参数、改 prompt。</p>
+    </div>
+  </div>
+
+  <div class="dim-card">
+    <div class="dim-head">
+      <div class="dim-idx">5</div>
+      <div class="dim-name">管交付</div>
+      <div class="dim-tag">你的强项</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>拆里程碑、识别风险、写验收标准、管客户预期、上线前逐条过 checklist。</p>
+      <p><strong>PM 时怎么用：</strong>你的看家本领。项目管理三件套：计划、跟踪、复盘。</p>
+      <p><strong>FDE 要额外会：</strong>AI 项目的验收标准跟传统软件不一样，要覆盖 Bad Case、评估指标、SLA 这些新东西。</p>
+    </div>
+  </div>
+
+  <div class="dim-card">
+    <div class="dim-head">
+      <div class="dim-idx">6</div>
+      <div class="dim-name">善沟通</div>
+      <div class="dim-tag">你的强项</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>对客户老板讲价值，对业务专家讲工作原理，对开发讲需求，主持跨角色对齐会。</p>
+      <p><strong>PM 时怎么用：</strong>你的看家本领。翻译官+粘合剂。</p>
+      <p><strong>FDE 要额外会：</strong>多一个"技术翻译"角色——把 AI 系统的原理和限制讲给业务方听懂。</p>
+    </div>
+  </div>
+
+  <div class="dim-card" style="border-color: #ea580c; background: #fff7ed;">
+    <div class="dim-head">
+      <div class="dim-idx" style="background: #ea580c;">7</div>
+      <div class="dim-name">啃环境（政企环境适配）</div>
+      <div class="dim-tag" style="background: #fed7aa; color: #9a3412;">驻场专属</div>
+    </div>
+    <div class="dim-body">
+      <p><strong>干什么：</strong>让 Agent 在客户真实环境里活下去——内外网隔离、防火墙白名单、代理跳转、堡垒机、离线部署、等保合规、数据脱敏。你的 Demo 在办公室跑得好好的，客户机房里可能连一个 API 都调不通。</p>
+      <p><strong>PM 时怎么用：</strong>驻场过就知道，政企环境跟公有云完全不是一回事——内网独立、访问要审批、部署要走变更单、数据不出网。你有感性认识，但可能没系统梳理过。</p>
+      <p><strong>FDE 要额外会：</strong>能在方案设计阶段就预判环境坑（哪些 API 通不了、哪些数据不能上云、哪些依赖装不上），并提前给出<strong>可落地</strong>的替代方案（本地部署 / 私有模型 / 反向代理 / 离线依赖包）。不能只在自己电脑上跑通，要能预判客户环境的坑。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧩 七项能力的组合逻辑</div>
+    <div>① ⑤ ⑥ 是<strong>业务闭环</strong>（懂 → 管 → 传），你已经跑通。② 是桥梁，③ ④ 是<strong>技术闭环</strong>（搭 → 改），你要新学。⑦ 是<strong>落地闭环</strong>——政企场景专属的"最后一公里"，很多技术过硬的团队栽在这项上。补齐 ② ③ ④ + ⑦，你就从 PM 升级成 FDE。</div>
+  </div>
+</div>
+
+<!-- Card 3: 自评问卷 -->
+<div class="card">
+  <h2>📝 三、七项能力自评（35 题）</h2>
+  <p>每项能力 5 道题，一共 35 题。<strong>请如实作答</strong>——填虚高的话，后面路径建议就白调了。</p>
+
+  <div class="scale-guide">
+    <div style="font-weight: 700; margin-bottom: 8px;">📏 打分尺度（1-5 分）</div>
+    <div class="row"><div class="num">1</div><div class="desc"><strong>完全不会</strong>：没做过，也说不清是啥</div></div>
+    <div class="row"><div class="num">2</div><div class="desc"><strong>听说过</strong>：做过一两次，大部分靠人带</div></div>
+    <div class="row"><div class="num">3</div><div class="desc"><strong>能独立做</strong>：能做出来，但产出需要人 review 才能用</div></div>
+    <div class="row"><div class="num">4</div><div class="desc"><strong>能交付</strong>：能独立做，产出别人可用，不用返工</div></div>
+    <div class="row"><div class="num">5</div><div class="desc"><strong>能带人</strong>：能带别人做，或形成 SOP / 方法论</div></div>
+  </div>
+
+  <form id="quizForm">
+  <!-- 问卷内容由 JS 生成 -->
+  </form>
+
+  <div class="submit-row">
+    <button type="button" class="btn" onclick="calcResult()">📊 生成我的雷达图</button>
+    <button type="button" class="btn ghost" onclick="fillAllThree()">🧪 演示：随机填分</button>
+  </div>
+</div>
+
+<!-- Card 4: 结果展示 -->
+<div class="card" id="result">
+  <h2>📊 四、你的能力雷达图</h2>
+
+  <div class="result-summary">
+    <div class="chart-wrap">
+      <svg id="radarSvg" viewBox="0 0 400 400" width="100%"></svg>
+      <div style="text-align:center; font-size:12px; color:var(--gray-500); margin-top:6px;">
+        <span style="display:inline-block; width:12px; height:2px; background:#94a3b8; vertical-align:middle;"></span> 满分 5 · 
+        <span style="display:inline-block; width:12px; height:2px; background:#10b981; vertical-align:middle;"></span> 目标线 4 · 
+        <span style="display:inline-block; width:12px; height:2px; background:#2563eb; vertical-align:middle;"></span> 你的分
+      </div>
+    </div>
+    <div class="score-list" id="scoreList"></div>
+  </div>
+
+  <h3>🎯 结果解读</h3>
+  <div id="interpretation"></div>
+
+  <h3>🛠️ 个性化路径建议</h3>
+  <div id="pathAdvice"></div>
+
+  <h3>📤 导出你的自评结果</h3>
+  <p style="font-size:14px; color:var(--gray-600);">复制下面的文本给我，我据此调整后续 Day 的路径侧重。也存一份到本地作为基线。</p>
+  <div class="export-area">
+    <textarea id="exportText" readonly></textarea>
+    <div style="margin-top:10px; text-align:right;">
+      <button type="button" class="btn ghost" onclick="copyExport()">📋 复制到剪贴板</button>
+    </div>
+  </div>
+</div>
+
+<!-- Card 5: 完成标志与验证方式 -->
+<div class="card">
+  <h2>✅ 五、完成标志 &amp; 验证方式</h2>
+  <p>今天这个自评不是"填完就完"，它是你后面学习路径的<strong>基线</strong>。下面这套验证方法，确保你今天做的这份评估是可用的。</p>
+
+  <h3>1. 完成度校验（4 条必做）</h3>
+  <ul class="check-list">
+    <li>35 题全部作答完，不留空</li>
+    <li>点了"生成雷达图"，看到了七边形</li>
+    <li>能不看纸说出：你最强的 3 项和最弱的 3 项分别是啥</li>
+    <li>把结果文本复制发给我（用于路径调整）+ 雷达图截图保存到本地</li>
+  </ul>
+
+  <h3>2. 诚实度自检（防止虚高 / 虚低）</h3>
+  <div class="box box-yellow">
+    <div class="box-title">⚠️ 三个反问，问完再确认得分</div>
+    <div>
+      <p><strong>问自己：</strong>对你打了 4-5 分的每一项，能立刻举出 <strong>3 个真实工作案例</strong>吗？举不出来说明高估了，调回 3 分。</p>
+      <p><strong>问自己：</strong>对你打了 1-2 分的每一项，能说出"上次踩坑是什么场景"吗？说不出来可能是<strong>没意识到该场景存在</strong>，不代表你做不好。</p>
+      <p><strong>问自己：</strong>你 35 题的得分标准差是多少？如果差异特别小（都填 3），说明你没认真思考，重做一遍。</p>
+    </div>
+  </div>
+
+  <h3>3. 稳定性验证（一周后重测）</h3>
+  <div class="box box-blue">
+    <div class="box-title">🔁 一周后同一份问卷再做一次</div>
+    <div>如果两次分数差异都在 <strong>±0.5</strong> 以内，说明这次评估是可信的。<strong>如果差异 &gt; 1 分</strong>，说明第一次没认真评，以第二次为准。</div>
+  </div>
+
+  <h3>4. 学习期间的复盘节奏</h3>
+  <table>
+    <thead><tr><th>时机</th><th>做什么</th><th>看什么</th></tr></thead>
+    <tbody>
+      <tr><td>Day 0（今天）</td><td>首测</td><td>知道起点</td></tr>
+      <tr><td>Phase 2 结束</td><td>搭原型阶段完成后重测</td><td>③ 搭原型 应该有明显提升</td></tr>
+      <tr><td>Phase 3 结束</td><td>让 Agent 可用阶段后重测</td><td>④ 改得动 应该有明显提升</td></tr>
+      <tr><td>Phase 4 结束</td><td>政企环境适配阶段后重测</td><td>⑦ 啃环境 应该有明显提升</td></tr>
+      <tr><td>结营</td><td>终测</td><td>七项分数应该都 ≥ 3.5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5. 结果异常时怎么办</h3>
+  <div class="box box-red">
+    <div class="box-title">🚨 三种"结果不可用"信号</div>
+    <div>
+      <p><strong>信号 A · 全部分数一样：</strong>你没认真评，或对自己没画像。→ 重做，或找信任的同事帮你评一遍。</p>
+      <p><strong>信号 B · 已有强项 ①⑤⑥ 得分 &lt; 3：</strong>你在 PM 这行都还没稳，先补 PM 基本功再学 FDE。</p>
+      <p><strong>信号 C · 新技能 ③④⑦ 全 5 分：</strong>你已经会了，不需要学 FDE，直接找项目实战。</p>
+    </div>
+  </div>
+
+  <h3>6. 交回给我什么？</h3>
+  <ul class="check-list">
+    <li>结果文本（从"导出你的自评结果"里复制的那段），发给我</li>
+    <li>雷达图截图，存到你的学习目录（如 <code>./radar_day00.png</code>）作为基线</li>
+    <li>告诉我：你最想优先补哪一项？（我据此调整后续 Day 的侧重）</li>
+  </ul>
+</div>
+
+<div class="footer">
+  学习笔记 · AI 项目经理成长 · FDE v2 · Day 0
+</div>
+
+</div>
+
+<script>
+// ==== 题库 ====
+const dimensions = [
+  { key: 'biz', name: '① 懂业务', color: '#10b981', questions: [
+    '客户第一次描述需求时，我能识别出模糊 / 矛盾的地方并追问澄清',
+    '我能判断"这个需求适不适合用 AI 做"，而不是接了再说',
+    '我能画出客户的核心业务流程图（白板 / 纸就行，不用工具）',
+    '我理解客户所在行业的关键指标（KPI）和考核方式',
+    '我能从客户抱怨中提炼出真正的痛点，而不是他表面说的功能',
+  ]},
+  { key: 'translate', name: '② 会翻译', color: '#f59e0b', questions: [
+    '我能把业务需求拆解成"AI 能做 / 不能做"的具体技术任务',
+    '我能画出 Agent 的架构图（组件、数据流、工具）',
+    '我知道 RAG / 工作流 / Agent / Multi-Agent 各自适合什么场景',
+    '我能大致估算方案的 token 用量、成本和响应时间',
+    '我能写出让开发看得懂、客户也能看懂的技术方案文档',
+  ]},
+  { key: 'proto', name: '③ 搭原型', color: '#6366f1', questions: [
+    '我能独立调用大模型 API，跑通一个最简 Demo（1 小时内）',
+    '我能写 Prompt 让模型稳定输出结构化 JSON',
+    '我能用 Function Calling 让模型调工具',
+    '我能搭一个最简 RAG，把文档变成回答依据',
+    '我能把上述能力串成一个端到端的可演示 Demo',
+  ]},
+  { key: 'debug', name: '④ 改得动', color: '#8b5cf6', questions: [
+    'Demo 报错时，我能看懂日志 / 错误信息定位问题',
+    '我能读懂开发写的代码（Python / JS），知道哪块是干嘛的',
+    '我能自己改 Prompt 和参数，做 A/B 对比',
+    '我能修小 bug（改字符串、调参数、改配置）而不必等开发',
+    '我懂 Git 基本操作（clone / branch / commit / pull request）',
+  ]},
+  { key: 'deliver', name: '⑤ 管交付', color: '#ef4444', questions: [
+    '我能把项目拆成里程碑，并识别关键路径',
+    '我能识别风险并提前预警，而不是事后甩锅',
+    '我知道 AI 项目验收标准怎么写（覆盖 Bad Case、指标、SLA）',
+    '我能管理客户预期，不轻易承诺做不到的事',
+    '我有自己的"交付 checklist"，上线前会逐条过',
+  ]},
+  { key: 'comm', name: '⑥ 善沟通', color: '#06b6d4', questions: [
+    '我能对客户老板讲清"这个 AI 系统能给你带来什么价值"（不用技术词）',
+    '我能对业务专家讲清"这个 AI 系统怎么工作"（用他们的行业语言）',
+    '我能对开发讲清需求，且能接住他们的技术反问',
+    '我能主持一次跨角色对齐会，让每个人清楚要做什么',
+    '项目出问题时，我能清晰复盘，不甩锅也不揽责',
+  ]},
+  { key: 'env', name: '⑦ 啃环境', color: '#ea580c', questions: [
+    '政企内网访问 LLM API 前，我知道要提前申请哪些白名单 / 域名 / 端口，也知道找谁申请',
+    '客户机房只能上内网时，我能设计"数据不出网"方案（含公有云 API vs 私有化部署的选型判断）',
+    '堡垒机 / 跳板机 / 企业代理（HTTP proxy、pip 代理、npm 代理）的连接和配置，我能自己搞定',
+    '客户离线机器（无外网 pip / npm）上，我能完成 Python / Node 环境 + 依赖 + 服务的部署',
+    '我理解等保 2.0、数据脱敏、日志留存、跨境数据合规这些基本要求，知道 AI 项目在这些方面的红线',
+  ]},
+];
+
+// ==== 渲染问卷 ====
+function renderQuiz() {
+  const form = document.getElementById('quizForm');
+  form.innerHTML = '';
+  dimensions.forEach((dim, di) => {
+    const details = document.createElement('details');
+    details.className = 'quiz-block';
+    if (di === 0) details.setAttribute('open', 'open');
+    const summary = document.createElement('summary');
+    summary.textContent = `${dim.name}（${dim.questions.length} 题）`;
+    details.appendChild(summary);
+    const body = document.createElement('div');
+    body.className = 'quiz-body';
+    dim.questions.forEach((q, qi) => {
+      const div = document.createElement('div');
+      div.className = 'question';
+      const qName = `${dim.key}_${qi}`;
+      div.innerHTML = `
+        <div class="q-text"><span class="idx">${di+1}.${qi+1}</span>${q}</div>
+        <div class="q-scale">
+          ${[1,2,3,4,5].map(v => `
+            <label>
+              <input type="radio" name="${qName}" value="${v}">
+              <span>${v}</span>
+            </label>
+          `).join('')}
+        </div>
+      `;
+      body.appendChild(div);
+    });
+    details.appendChild(body);
+    form.appendChild(details);
+  });
+}
+
+// ==== 计算结果 ====
+function calcResult() {
+  const scores = {};
+  const missing = [];
+  dimensions.forEach(dim => {
+    let sum = 0, count = 0;
+    dim.questions.forEach((q, qi) => {
+      const name = `${dim.key}_${qi}`;
+      const checked = document.querySelector(`input[name="${name}"]:checked`);
+      if (checked) {
+        sum += parseInt(checked.value);
+        count++;
+      } else {
+        missing.push(`${dim.name} 第 ${qi+1} 题`);
+      }
+    });
+    scores[dim.key] = count > 0 ? sum / count : 0;
+  });
+
+  if (missing.length > 0) {
+    alert('还有 ' + missing.length + ' 题没填，请补齐后再生成：\n\n' + missing.slice(0,5).join('\n') + (missing.length > 5 ? '\n...' : ''));
+    return;
+  }
+
+  drawRadar(scores);
+  drawScoreList(scores);
+  interpret(scores);
+  advisePath(scores);
+  fillExport(scores);
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior: 'smooth'});
+}
+
+// ==== 画雷达图（SVG）====
+function drawRadar(scores) {
+  const svg = document.getElementById('radarSvg');
+  const cx = 200, cy = 200, maxR = 140;
+  const N = dimensions.length;
+  let html = '';
+
+  // 背景圈（1-5）
+  for (let r = 1; r <= 5; r++) {
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+      const angle = -Math.PI/2 + i * 2 * Math.PI / N;
+      const x = cx + (r / 5) * maxR * Math.cos(angle);
+      const y = cy + (r / 5) * maxR * Math.sin(angle);
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    const strokeWidth = r === 5 ? 1.5 : 0.6;
+    const stroke = r === 5 ? '#94a3b8' : '#e5e7eb';
+    html += `<polygon points="${pts.join(' ')}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
+  }
+
+  // 目标线（4 分）
+  const targetPts = [];
+  for (let i = 0; i < N; i++) {
+    const angle = -Math.PI/2 + i * 2 * Math.PI / N;
+    const x = cx + (4 / 5) * maxR * Math.cos(angle);
+    const y = cy + (4 / 5) * maxR * Math.sin(angle);
+    targetPts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  html += `<polygon points="${targetPts.join(' ')}" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+
+  // 轴线
+  for (let i = 0; i < N; i++) {
+    const angle = -Math.PI/2 + i * 2 * Math.PI / N;
+    const x = cx + maxR * Math.cos(angle);
+    const y = cy + maxR * Math.sin(angle);
+    html += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#cbd5e1" stroke-width="0.6"/>`;
+  }
+
+  // 用户得分
+  const userPts = [];
+  dimensions.forEach((dim, i) => {
+    const s = scores[dim.key];
+    const angle = -Math.PI/2 + i * 2 * Math.PI / N;
+    const x = cx + (s / 5) * maxR * Math.cos(angle);
+    const y = cy + (s / 5) * maxR * Math.sin(angle);
+    userPts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  });
+  html += `<polygon points="${userPts.join(' ')}" fill="rgba(37,99,235,0.25)" stroke="#2563eb" stroke-width="2.5"/>`;
+
+  // 数据点
+  dimensions.forEach((dim, i) => {
+    const s = scores[dim.key];
+    const angle = -Math.PI/2 + i * 2 * Math.PI / N;
+    const x = cx + (s / 5) * maxR * Math.cos(angle);
+    const y = cy + (s / 5) * maxR * Math.sin(angle);
+    html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#2563eb"/>`;
+  });
+
+  // 标签
+  dimensions.forEach((dim, i) => {
+    const angle = -Math.PI/2 + i * 2 * Math.PI / N;
+    const lx = cx + (maxR + 25) * Math.cos(angle);
+    const ly = cy + (maxR + 25) * Math.sin(angle);
+    const anchor = Math.abs(Math.cos(angle)) < 0.3 ? 'middle' : (Math.cos(angle) > 0 ? 'start' : 'end');
+    html += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="${dim.color}" font-size="13" font-weight="700">${dim.name}</text>`;
+    const sy = ly + 15;
+    html += `<text x="${lx.toFixed(1)}" y="${sy.toFixed(1)}" text-anchor="${anchor}" fill="#64748b" font-size="11">${scores[dim.key].toFixed(1)} / 5</text>`;
+  });
+
+  // 刻度
+  for (let r = 1; r <= 5; r++) {
+    html += `<text x="${cx + 4}" y="${cy - (r/5)*maxR + 3}" fill="#94a3b8" font-size="9">${r}</text>`;
+  }
+
+  svg.innerHTML = html;
+}
+
+// ==== 分数列表 ====
+function drawScoreList(scores) {
+  const box = document.getElementById('scoreList');
+  let html = '';
+  dimensions.forEach(dim => {
+    const s = scores[dim.key];
+    const pct = (s / 5 * 100).toFixed(0);
+    html += `
+      <div class="score-item">
+        <div class="lbl">${dim.name}</div>
+        <div class="bar-wrap"><div class="bar" style="width:${pct}%; background:linear-gradient(90deg, ${dim.color}, ${dim.color}cc);"></div></div>
+        <div class="val" style="color:${dim.color}">${s.toFixed(1)}</div>
+      </div>
+    `;
+  });
+  box.innerHTML = html;
+}
+
+// ==== 结果解读 ====
+function interpret(scores) {
+  const arr = dimensions.map(d => ({name: d.name, key: d.key, score: scores[d.key]}));
+  arr.sort((a, b) => b.score - a.score);
+  const top3 = arr.slice(0, 3);
+  const bot3 = arr.slice(-3).reverse();
+  const avg = arr.reduce((s, x) => s + x.score, 0) / arr.length;
+
+  let html = '';
+  html += `<div class="box box-green"><div class="box-title">💪 最强 3 项</div><div>${top3.map(x => `<strong>${x.name}</strong>（${x.score.toFixed(1)}）`).join(' · ')}</div></div>`;
+  html += `<div class="box box-orange"><div class="box-title">📉 最弱 3 项</div><div>${bot3.map(x => `<strong>${x.name}</strong>（${x.score.toFixed(1)}）`).join(' · ')}</div></div>`;
+  html += `<div class="box box-blue"><div class="box-title">📊 综合水平</div><div>平均分 <strong>${avg.toFixed(2)}</strong> / 5。`;
+  if (avg < 2.5) html += '目前离 FDE 门槛还有距离，建议按完整路径跑一遍。';
+  else if (avg < 3.5) html += 'PM 底子扎实，正好是学 FDE 的最佳时机——补齐技术闭环 + 政企环境闭环即可。';
+  else if (avg < 4.2) html += '基础不错，路径可以压缩，重点补最弱的 2-3 项。';
+  else html += '你已经很接近 FDE 了，建议直接接项目实战，路径课作查漏补缺用。';
+  html += '</div></div>';
+
+  document.getElementById('interpretation').innerHTML = html;
+}
+
+// ==== 路径建议 ====
+function advisePath(scores) {
+  const advice = {
+    biz: {weak: 'Phase 1（需求判断 + 是否适合 AI）', strong: 'Phase 1 可快速过'},
+    translate: {weak: 'Phase 1（方案选型 + 架构图）', strong: 'Phase 1 后半段可略读'},
+    proto: {weak: 'Phase 2（搭原型）全部必修', strong: 'Phase 2 可跳过基础，直接做综合练习'},
+    debug: {weak: 'Phase 3（让 Agent 可用）必修', strong: 'Phase 3 可快速过'},
+    deliver: {weak: 'Phase 5（交付与迭代）必修', strong: 'Phase 5 只做练习'},
+    comm: {weak: 'Phase 5 沟通与培训章节重点做', strong: 'Phase 5 沟通部分可略读'},
+    env: {weak: 'Phase 4（政企环境适配）全部必修 —— 白名单、离线部署、堡垒机、合规', strong: 'Phase 4 只挑选新工具速览'},
+  };
+
+  const arr = dimensions.map(d => ({name: d.name, key: d.key, score: scores[d.key]}));
+  const musts = arr.filter(x => x.score < 3).map(x => `<li>补 <strong>${x.name}</strong>（${x.score.toFixed(1)} 分）：${advice[x.key].weak}</li>`);
+  const skips = arr.filter(x => x.score >= 4).map(x => `<li>快进 <strong>${x.name}</strong>（${x.score.toFixed(1)} 分）：${advice[x.key].strong}</li>`);
+
+  let html = '';
+  if (musts.length > 0) {
+    html += `<div class="box box-red"><div class="box-title">🔴 必修（&lt; 3 分）</div><ul style="margin-left:20px;">${musts.join('')}</ul></div>`;
+  }
+  if (skips.length > 0) {
+    html += `<div class="box box-green"><div class="box-title">🟢 可快进（≥ 4 分）</div><ul style="margin-left:20px;">${skips.join('')}</ul></div>`;
+  }
+  const mid = arr.filter(x => x.score >= 3 && x.score < 4);
+  if (mid.length > 0) {
+    html += `<div class="box box-yellow"><div class="box-title">🟡 常规学习（3-4 分）</div><ul style="margin-left:20px;">${mid.map(x => `<li><strong>${x.name}</strong>（${x.score.toFixed(1)} 分）：按原路径正常学</li>`).join('')}</ul></div>`;
+  }
+  html += `<div class="box box-purple"><div class="box-title">💡 我下一步做什么</div><div>把下面导出的结果文本发给我，我会根据你的分布，把后续 Day 的每日主题<strong>重新排序 + 加减内容</strong>，输出一份专属于你的路径终稿。</div></div>`;
+
+  document.getElementById('pathAdvice').innerHTML = html;
+}
+
+// ==== 导出文本 ====
+function fillExport(scores) {
+  const now = new Date();
+  const date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const arr = dimensions.map(d => ({name: d.name, key: d.key, score: scores[d.key]}));
+  const sorted = [...arr].sort((a, b) => b.score - a.score);
+  const avg = arr.reduce((s, x) => s + x.score, 0) / arr.length;
+
+  let txt = '=== FDE 能力自评结果（Day 0）===\n';
+  txt += `日期：${date}\n\n`;
+  txt += '📊 七项能力得分：\n';
+  arr.forEach(x => { txt += `  ${x.name}：${x.score.toFixed(1)} / 5\n`; });
+  txt += `\n综合平均：${avg.toFixed(2)} / 5\n\n`;
+  txt += `💪 最强 3 项：${sorted.slice(0,3).map(x => `${x.name}(${x.score.toFixed(1)})`).join('、')}\n`;
+  txt += `📉 最弱 3 项：${sorted.slice(-3).reverse().map(x => `${x.name}(${x.score.toFixed(1)})`).join('、')}\n\n`;
+  txt += '🔴 必修（<3）：' + (arr.filter(x=>x.score<3).map(x=>x.name).join('、') || '无') + '\n';
+  txt += '🟡 常规（3-4）：' + (arr.filter(x=>x.score>=3&&x.score<4).map(x=>x.name).join('、') || '无') + '\n';
+  txt += '🟢 快进（≥4）：' + (arr.filter(x=>x.score>=4).map(x=>x.name).join('、') || '无') + '\n\n';
+  txt += '=== 请将本文本发回给学习助手，用于调整后续 Day 的路径 ===\n';
+
+  document.getElementById('exportText').value = txt;
+}
+
+// ==== 复制 ====
+function copyExport() {
+  const ta = document.getElementById('exportText');
+  ta.select();
+  try {
+    document.execCommand('copy');
+    alert('已复制到剪贴板，粘贴发给学习助手即可');
+  } catch (e) {
+    alert('复制失败，请手动选中文本复制');
+  }
+}
+
+// ==== 演示：随机填分（3 分附近，方便验证）====
+function fillAllThree() {
+  document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+  dimensions.forEach(dim => {
+    dim.questions.forEach((q, qi) => {
+      const v = 2 + Math.floor(Math.random() * 4); // 2-5
+      const inp = document.querySelector(`input[name="${dim.key}_${qi}"][value="${v}"]`);
+      if (inp) inp.checked = true;
+    });
+  });
+  alert('已随机填完（用于查看效果）。真做时请如实作答。');
+}
+
+// 初始化
+renderQuiz();
+</script>
+</body>
+</html>
