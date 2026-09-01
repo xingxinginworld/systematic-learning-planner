@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDE v2 · Day 8 · 向量化与检索质量优化</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --blue-dark: #1e40af;
+  --orange: #ea580c;
+  --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --green: #059669;
+  --green-bg: #ecfdf5;
+  --yellow: #d97706;
+  --yellow-bg: #fffbeb;
+  --purple: #7c3aed;
+  --purple-bg: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --text: #1a1a2e;
+  --text-light: #6b7280;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #f0f4f8; color: var(--text); line-height: 1.8; font-size: 16px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 55%, #0d7377 100%);
+  color: #fff; border-radius: var(--radius); padding: 32px 30px 26px; margin-bottom: 20px;
+}
+.hero-badge { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+.hero .subtitle { font-size: 14.5px; opacity: 0.92; margin-bottom: 14px; line-height: 1.7; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: 0.85; }
+.hero-back { font-size: 12px; margin-top: 10px; opacity: 0.75; }
+.hero-back a { color: #fff; text-decoration: underline; }
+
+.card { background: #fff; border-radius: var(--radius); padding: 26px 26px 22px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); margin: 22px 0 10px; padding-left: 12px; border-left: 3px solid var(--primary); }
+.card h4 { font-size: 15px; font-weight: 600; margin: 14px 0 8px; color: var(--gray-800); }
+p { margin-bottom: 10px; }
+code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: 14px; font-family: "Cascadia Code", "Fira Code", Consolas, monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 14px; }
+th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 13px; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+tr:nth-child(even) td { background: var(--gray-50); }
+
+.box { border-radius: 8px; padding: 14px 16px; margin: 14px 0; border-left: 4px solid; font-size: 14.5px; }
+.box-blue { background: var(--primary-bg); border-color: var(--primary); }
+.box-green { background: var(--green-bg); border-color: var(--green); }
+.box-yellow { background: var(--yellow-bg); border-color: var(--yellow); }
+.box-red { background: var(--red-bg); border-color: var(--red); }
+.box-purple { background: var(--purple-bg); border-color: var(--purple); }
+.box-orange { background: var(--orange-bg); border-color: var(--orange); }
+.box-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.mentor { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-radius: 10px; padding: 16px 18px; margin: 14px 0; border: 1px solid #dbeafe; position: relative; }
+.mentor::before { content: '👨‍🏫'; position: absolute; top: -12px; left: 16px; background: #fff; padding: 0 6px; font-size: 20px; }
+.mentor .mentor-title { font-weight: 700; color: var(--blue-dark); font-size: 14px; margin-bottom: 6px; margin-top: 4px; }
+.mentor .mentor-body { font-size: 14.5px; color: var(--gray-800); line-height: 1.75; }
+.mentor .mentor-body p { margin-bottom: 8px; }
+
+.goal-list { list-style: none; padding: 0; }
+.goal-list li { padding: 8px 0 8px 32px; position: relative; font-size: 15px; }
+.goal-list li::before { content: '🎯'; position: absolute; left: 4px; top: 8px; font-size: 15px; }
+
+.mnemonic { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; padding: 14px 18px; margin: 14px 0; text-align: center; }
+.mnemonic .m-title { font-size: 12px; color: #92400e; margin-bottom: 6px; letter-spacing: 2px; }
+.mnemonic .m-line { font-size: 18px; font-weight: 700; color: #78350f; letter-spacing: 3px; }
+.mnemonic .m-explain { font-size: 13px; color: #92400e; margin-top: 6px; }
+
+.cheatsheet { border: 2px dashed var(--primary); border-radius: 10px; padding: 16px 18px; margin: 14px 0; background: #f0f9ff; }
+.cheatsheet .cs-title { font-weight: 700; color: var(--blue-dark); font-size: 15px; margin-bottom: 10px; }
+
+.steps { counter-reset: step; margin: 12px 0; }
+.step-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px dashed var(--gray-200); }
+.step-item:last-child { border-bottom: none; }
+.step-item .step-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; text-align: center; line-height: 34px; font-weight: 700; }
+.step-item .step-body { flex: 1; }
+.step-item .step-body strong { color: var(--blue-dark); }
+
+.quiz-item { border: 1px solid var(--gray-200); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.quiz-item summary { background: var(--primary-bg); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14.5px; }
+.quiz-item[open] summary { border-bottom: 1px solid var(--gray-200); }
+.quiz-body { padding: 12px 16px; }
+.quiz-options { list-style: none; padding: 0; }
+.quiz-options li { padding: 5px 0; font-size: 14px; }
+.quiz-answer { background: var(--green-bg); border-left: 3px solid var(--green); padding: 10px 12px; margin-top: 10px; font-size: 14px; border-radius: 4px; }
+.quiz-answer .ans-title { font-weight: 700; color: var(--green); margin-bottom: 6px; }
+.wrong-analysis { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 12px; margin-top: 8px; font-size: 13.5px; border-radius: 4px; }
+.wrong-analysis .wa-title { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+
+.case-block { border: 1px solid var(--gray-200); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.case-block summary { background: linear-gradient(135deg, #ede9fe, #ddd6fe); padding: 12px 14px; cursor: pointer; font-weight: 600; color: #5b21b6; font-size: 14.5px; }
+.case-block .case-body { padding: 14px 16px; font-size: 14px; }
+.case-block .case-body h5 { color: var(--blue-dark); margin: 10px 0 6px; font-size: 14px; }
+
+.interview-quote { background: linear-gradient(135deg, #1e3a5f, #1a56db); color: #fff; border-radius: 10px; padding: 18px 20px; margin: 14px 0; font-size: 15px; font-style: italic; line-height: 1.8; position: relative; }
+.interview-quote::before { content: '💼'; position: absolute; top: -10px; left: 16px; background: #fff; padding: 2px 6px; border-radius: 12px; font-size: 16px; }
+.interview-quote .iq-tag { display: block; font-size: 11px; opacity: 0.8; margin-bottom: 6px; font-style: normal; letter-spacing: 1px; }
+
+.footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 20px 0 36px; border-top: 1px solid var(--gray-200); margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .hero { padding: 24px 18px 20px; }
+  .hero h1 { font-size: 20px; }
+  .card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">FDE v2 · Phase 2 · Day 8</div>
+  <h1>🔎 向量化与检索质量优化</h1>
+  <div class="subtitle">Top-K 检索没检到，LLM 再牛也答不对——今天讲 <strong>5 个优化维度</strong>，把一个 60 分的 RAG 调到 88 分。</div>
+  <div class="hero-meta">
+    <span>🧱 Phase 2 · RAG 与检索工程</span>
+    <span>⏱️ 预计 70-90 分钟</span>
+    <span>🧭 补齐能力：③ 搭原型</span>
+  </div>
+  <div class="hero-back">【学习主题】学习路径 · 起点校准 · 上一站【上一日主题】</div>
+</div>
+
+<!-- 板块 1：今日目标 -->
+<div class="card">
+  <h2>🎯 一、今日目标</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>Day 7 你把预处理这一步做扎实了——文档切好了、元数据备齐了。今天进入 RAG 的<strong>中段：向量化 + 检索</strong>。这一段是 FDE 项目里客户最爱吐槽的："我明明知道文档里有答案，你的 AI 就是找不到"——十有八九是检索这一步没调。</p>
+      <p>今天不讲玄学，讲<strong>可以量化的 5 个优化维度</strong>。每一维怎么调、调之前调之后指标怎么变，我给你摊开讲。学完你在客户面前说"这个 RAG 我能从 60 分调到 88 分"，就能说出具体每一步动了什么。</p>
+    </div>
+  </div>
+
+  <ul class="goal-list">
+    <li>说清 <strong>embedding 是啥、向量库是啥</strong>，能给外行客户讲人话</li>
+    <li>掌握 <strong>5 个优化维度</strong> 的顺序：chunk → embedding → 阈值 → 重排 → 元数据过滤</li>
+    <li>能算 <strong>Recall@K / MRR / NDCG / 端到端答对率</strong> 4 个检索质量指标</li>
+    <li>跟着做一个"检索错案例"的完整调优过程，看到指标从 60% 一路涨到 88%</li>
+    <li>拿到 <strong>中文 Embedding 模型对照表 + 参数速查卡</strong>，能直接抄进项目方案</li>
+  </ul>
+</div>
+
+<!-- 板块 2：核心讲解 -->
+<div class="card">
+  <h2>📖 二、核心讲解</h2>
+
+  <h3>是什么：Embedding 与向量库一句话</h3>
+  <p><strong>Embedding</strong> = 把一段文本变成一串数字（一个向量），意思相近的文本，向量在空间里离得近。</p>
+  <p><strong>向量库</strong> = 存这些向量的数据库，最大本事是"给一个新向量，几毫秒内找出库里最像的 Top-K 个"。</p>
+  <p>大白话——embedding 把"意思"变成"坐标"，向量库像一个特别快的"意思-坐标"查表器。RAG 就是靠这两样，把用户问题翻译成坐标 → 查库 → 拿回相关文本 → 交给 LLM 生成回答。</p>
+
+  <div class="box box-purple">
+    <div class="box-title">🎓 给客户讲 Embedding 的三句话</div>
+    <div>
+      <p><strong>1.</strong> 计算机不认识"文字"，只认识"数字"。Embedding 就是把每段文字翻译成 1024 维的数字向量。</p>
+      <p><strong>2.</strong> 相近意思的文字，翻译出来的向量也相近——"投标截止日期"和"报名结束时间"，坐标几乎重叠。</p>
+      <p><strong>3.</strong> 检索的时候，用户问句也变成向量，去库里找离得最近的 Top-K 段文字，扔给 LLM 生成答案。</p>
+    </div>
+  </div>
+
+  <div class="mnemonic">
+    <div class="m-title">□ □ □ 检索链路口诀 □ □ □</div>
+    <div class="m-line">分块 · 嵌入 · 检索 · 重排 · 过滤</div>
+    <div class="m-explain">5 个维度按顺序调 · 每调一步都能量化收益</div>
+  </div>
+
+  <h3>为什么：PM 视角下的三个大坑</h3>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 1 · 只调 Top-K 数值（治标不治本）</div>
+    <div>
+      <p>Top-K 检索答不出？很多人第一反应是 <em>"把 K 从 5 调到 10 试试"</em>——结果确实召回率涨了 5 个点，但 <strong>LLM 的输入被塞满了无关内容</strong>，答对率反而掉了 3 个点，整体指标只涨 2 个点。</p>
+      <p>治本的思路：先看是 <em>分块碎片化</em>（该调 Day 7 的分块策略），还是 <em>embedding 模型选错</em>（换中文优化的模型），还是 <em>无重排</em>（Top-K 顺序乱）。</p>
+      <p><strong>正确姿势：</strong>Top-K 只在最后调，之前先把 chunk / embedding / rerank 调好。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 2 · 不做重排（Top-K 顺序未必最相关）</div>
+    <div>
+      <p>Embedding 向量检索是个"粗筛"——它算的是"表面语义相似"。真正的"回答相关性"要用一个专门的重排模型（Reranker）再判一遍。</p>
+      <p>举个真实场景：查询"招标保证金金额"，向量检索 Top-5 里第 1 名是"投标保证金要求"（讲要求，没写金额），第 4 名才是"投标保证金：500,000 元"。不做重排，你给 LLM 的是第 1 名，答案就是"文档没写具体金额"——但其实文档写了，就是没排上去。</p>
+      <p><strong>正确姿势：</strong>Top-20 向量粗筛 → Reranker 重排取 Top-5 → 交给 LLM。多这一步，答对率经常涨 10-15 个百分点。</p>
+    </div>
+  </div>
+
+  <div class="box box-red">
+    <div class="box-title">🚨 坑 3 · 忽略元数据过滤（用向量硬拼所有事）</div>
+    <div>
+      <p>用户问："2024 年的招标文件里哪些提到了 ESG 要求"。你直接把这个问句丢进向量检索——库里 2019、2020、2021 年的文件也全被检出来了，因为它们也讲 ESG。</p>
+      <p>这时候<strong>元数据过滤前置</strong>是标准姿势：先按 <code>publish_date &gt;= 2024-01-01</code> 过滤到只剩 2024 年的分块，再对这批做向量检索——召回率立刻上一个台阶，还省算力。</p>
+      <p><strong>正确姿势：</strong>"能用元数据过滤解决的，别让向量硬拼"——这是 Day 7 元数据文化的红利。</p>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">🧭 PM 行动指南：检索质量评估 4 指标</div>
+    <div>
+      <p><strong>Recall@K</strong>：Top-K 里包含标准答案的比例（前提要有测试集标注）——衡量"检得到"</p>
+      <p><strong>MRR (Mean Reciprocal Rank)</strong>：标准答案在 Top-K 里的平均排名倒数——衡量"排得靠前"</p>
+      <p><strong>NDCG</strong>：考虑相关性打分的加权指标——衡量"高相关的排得越前越好"</p>
+      <p><strong>端到端答对率</strong>：找 30-50 条真实问答对，让完整 RAG 跑一遍，人工判分——衡量"客户真的用起来爽不爽"</p>
+      <p style="color:var(--blue-dark);margin-top:8px;"><strong>PM 场景优先级：端到端答对率 &gt; Recall@K &gt; MRR &gt; NDCG。</strong>指标越靠后越技术、越靠前越业务，跟客户对齐时永远先讲第一个。</p>
+    </div>
+  </div>
+
+  <h3>怎么用：5 个优化维度（顺序有讲究）</h3>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Chunk 大小与重叠</strong>——256-512 tokens + 10-20% overlap 是主流甜蜜点。太短（&lt; 100）信息不完整、太长（&gt; 800）稀释语义。政企文档偏向 400-500 tokens。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Embedding 模型选型</strong>——中文场景首选 <code>BGE-M3</code>（开源、免费、效果好）或阿里云百炼的 <code>text-embedding-v3</code>（API、按量付费、更省心）。别再默认 OpenAI，中文场景吃亏。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>检索相似度阈值</strong>——余弦相似度 0.7 起步。低于 0.5 基本是噪声。设个阈值兜底，避免"库里没有答案时硬拉 Top-K 编"。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>重排 Reranker</strong>——推荐 <code>BGE-Reranker-v2</code>（开源）或 Cohere Rerank（API）。用法：向量检索出 Top-20 → 重排取 Top-5 → 给 LLM。这一步经常带来 10-15 分的答对率提升。
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>元数据过滤前置</strong>——按时间 / 来源 / 文档类型 / 标签先过滤，再对剩余分块做向量检索。这是 Day 7 元数据文化的直接红利。
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-yellow">
+    <div class="box-title">⚠️ 顺序为什么这么排？</div>
+    <div>
+      <p><strong>Chunk 在最前</strong>——分块碎了，后面全白搭。<strong>Embedding 第二</strong>——模型选错，向量本身就不对。<strong>阈值第三</strong>——是兜底，早设早止损。<strong>Reranker 第四</strong>——粗筛质量够好，才有精排的意义。<strong>元数据过滤第五</strong>——不是最后一步，是<em>可以插在任何一步之前</em>的"外挂"，尤其在数据量大的时候是首选。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 板块 3：动手步骤（本例为 IT/AI 类，含可运行代码；非技术类主题请改为案例分析/决策演练/模板填写/角色扮演等适配形式，同样要有可操作的 case 与对错/优劣判定） -->
+<div class="card">
+  <h2>🛠️ 三、动手步骤：一个真实的检索答错 Case Study</h2>
+
+  <div class="mentor">
+    <div class="mentor-title">导师说</div>
+    <div class="mentor-body">
+      <p>下面这个案例改编自我在某国网单位见过的项目。原始 RAG 答对率只有 60%，客户差点砍项目。5 个维度一步一步优化后，最终到 88%。你跟着过一遍，重点看<strong>每一步指标涨了多少</strong>——这就是你以后写复盘报告的模板。</p>
+    </div>
+  </div>
+
+  <details class="case-block" open>
+    <summary>📌 案例 A · 招标文件问答 RAG 从 60 分调到 88 分（跟着做）</summary>
+    <div class="case-body">
+      <h5>初始状态</h5>
+      <p>数据：200 份招标文件，共 1.2 万分块。测试集：50 条真实客户问答。<br>
+      基线：chunk 800 tokens 无 overlap · OpenAI ada-002 embedding · Top-K=5 · 无阈值 · 无重排 · 无元数据过滤。<br>
+      <strong>基线指标：Recall@5 = 62%，端到端答对率 = 60%</strong>。</p>
+
+      <h5>Step 1 · 调 Chunk：800 → 400 + 15% overlap</h5>
+      <p>Day 7 学过——政企文档偏 400-500 tokens。改分块之后重新 embedding 一遍。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;"><span style="color:#94a3b8"># chunk 参数改造后重新入库</span>
+CHUNK_SIZE = 400
+OVERLAP = 60  <span style="color:#94a3b8"># 15%</span>
+
+<span style="color:#94a3b8"># 重跑 Day 7 的 chunk_by_section 得到新的 chunks.json</span></pre>
+      <p><strong>指标变化：Recall@5: 62% → 71%（+9），答对率: 60% → 67%（+7）</strong></p>
+
+      <h5>Step 2 · 换 Embedding：ada-002 → 阿里云 text-embedding-v3</h5>
+      <p>ada-002 是英文优化的，中文场景吃亏。换成阿里云百炼的中文 embedding。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import dashscope
+from dashscope import TextEmbedding
+import os
+
+dashscope.api_key = os.getenv("DASHSCOPE_API_KEY")
+
+def embed(texts):
+    <span style="color:#94a3b8">"""批量把文本转成向量"""</span>
+    resp = TextEmbedding.call(
+        model=TextEmbedding.Models.text_embedding_v3,
+        input=texts  <span style="color:#94a3b8"># 支持批量，最多 25 条一次</span>
+    )
+    return [item["embedding"] for item in resp.output["embeddings"]]
+
+<span style="color:#94a3b8"># 对所有 chunks 重新嵌入</span>
+import json
+chunks = json.load(open("chunks.json", encoding="utf-8"))
+for i in range(0, len(chunks), 25):
+    batch = chunks[i:i+25]
+    vecs = embed([c["text"] for c in batch])
+    for c, v in zip(batch, vecs):
+        c["vector"] = v</pre>
+      <p><strong>指标变化：Recall@5: 71% → 79%（+8），答对率: 67% → 73%（+6）</strong></p>
+
+      <h5>Step 3 · 加相似度阈值 0.5</h5>
+      <p>低于 0.5 的分块直接扔掉，不让它污染 LLM 上下文。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import numpy as np
+
+def cosine(a, b):
+    a, b = np.array(a), np.array(b)
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+def retrieve(query, chunks, top_k=5, threshold=0.5):
+    q_vec = embed([query])[0]
+    scored = [(c, cosine(q_vec, c["vector"])) for c in chunks]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    <span style="color:#94a3b8"># 阈值过滤：低于 0.5 直接丢</span>
+    return [(c, s) for c, s in scored[:top_k] if s &gt;= threshold]</pre>
+      <p><strong>指标变化：Recall@5 微降到 78%（正常，牺牲一点召回换精度），答对率: 73% → 76%（+3，噪声减少）</strong></p>
+
+      <h5>Step 4 · 加重排 Reranker（Top-20 → 重排取 Top-5）</h5>
+      <p>用阿里云百炼的 <code>gte-rerank</code>（也可以换 BGE-Reranker-v2）。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">from dashscope import TextReRank
+
+def rerank(query, candidates, top_k=5):
+    <span style="color:#94a3b8">"""对向量粗筛的 Top-20 做精排"""</span>
+    resp = TextReRank.call(
+        model="gte-rerank",
+        query=query,
+        documents=[c["text"] for c in candidates],
+        top_n=top_k
+    )
+    <span style="color:#94a3b8"># 按重排后的 index 取回原分块</span>
+    return [candidates[r["index"]] for r in resp.output["results"]]
+
+<span style="color:#94a3b8"># 使用姿势：向量检索 20 个 → 重排取 5 个</span>
+candidates = [c for c, _ in retrieve(q, chunks, top_k=20, threshold=0.5)]
+top5 = rerank(q, candidates, top_k=5)</pre>
+      <p><strong>指标变化：Recall@5 = 85%（+7），答对率: 76% → 85%（+9）——单步收益最大的一环</strong></p>
+
+      <h5>Step 5 · 元数据过滤前置</h5>
+      <p>用户问句里含"2024 年"、"XX 项目"这种关键词时，先按 metadata 过滤，再向量检索。</p>
+<pre style="background:#1e293b;color:#e2e8f0;padding:14px 16px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.7;">import re
+from datetime import datetime
+
+def parse_filters(query):
+    <span style="color:#94a3b8">"""从用户问句里抽出可过滤的条件"""</span>
+    filters = {}
+    <span style="color:#94a3b8"># 抽年份</span>
+    year = re.search(r"(20\d{2})\s*年", query)
+    if year:
+        filters["year"] = int(year.group(1))
+    <span style="color:#94a3b8"># 抽项目名 / 文档类型 等，视业务定制</span>
+    if "招标" in query:
+        filters["doc_type"] = "招标文件"
+    return filters
+
+def retrieve_with_filter(query, chunks, top_k=20, threshold=0.5):
+    filters = parse_filters(query)
+    <span style="color:#94a3b8"># 先按元数据过滤，再向量检索</span>
+    filtered = chunks
+    if "year" in filters:
+        filtered = [c for c in filtered
+                    if datetime.fromisoformat(c["metadata"]["publish_date"]).year == filters["year"]]
+    if "doc_type" in filters:
+        filtered = [c for c in filtered if c["metadata"]["doc_type"] == filters["doc_type"]]
+    return retrieve(query, filtered, top_k=top_k, threshold=threshold)</pre>
+      <p><strong>指标变化：Recall@5 = 89%（+4），答对率: 85% → 88%（+3）</strong></p>
+
+      <h5>最终对账</h5>
+      <table>
+        <thead><tr><th>阶段</th><th>Recall@5</th><th>答对率</th><th>关键改动</th></tr></thead>
+        <tbody>
+          <tr><td>基线</td><td>62%</td><td>60%</td><td>无</td></tr>
+          <tr><td>+ Chunk 400/15%</td><td>71%</td><td>67%</td><td>Day 7 分块调优</td></tr>
+          <tr><td>+ 中文 Embedding</td><td>79%</td><td>73%</td><td>换阿里云 v3</td></tr>
+          <tr><td>+ 阈值 0.5</td><td>78%</td><td>76%</td><td>去噪</td></tr>
+          <tr><td>+ Reranker</td><td>85%</td><td>85%</td><td>Top-20 → 精排 Top-5</td></tr>
+          <tr><td>+ 元数据过滤</td><td><strong>89%</strong></td><td><strong>88%</strong></td><td>时间/类型前置过滤</td></tr>
+        </tbody>
+      </table>
+      <p><em>你把这张表贴给客户，他会立刻知道你每一步动了什么、值多少钱。</em></p>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 B · 员工问答 RAG 优化：从 Recall@5=0.65 到 0.85+（自己练）</summary>
+    <div class="case-body">
+      <p><strong>初始设定：</strong>员工手册 RAG，测试集 40 条，当前 Recall@5=0.65、答对率 62%。分块 512 tokens 无 overlap，用 BGE-Base，无阈值，无重排，无过滤。</p>
+      <p style="color: var(--gray-500);">按今天学的 5 个维度设计一版优化路线图。目标：Recall@5 ≥ 0.85。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>优化路线图（按今天的顺序）：</strong></p>
+          <ol style="margin-left: 24px;">
+            <li><strong>Chunk</strong>：员工手册段落偏短，改 300 tokens + 60 overlap，同时按二级标题走 Document-aware。预计 Recall +8。</li>
+            <li><strong>Embedding</strong>：BGE-Base 升级到 <code>BGE-M3</code> 或阿里云 text-embedding-v3。预计 +5。</li>
+            <li><strong>阈值</strong>：设 0.55（员工问句口语化，阈值别设太高）。预计 Recall 微降 1-2，但答对率涨 +2。</li>
+            <li><strong>Reranker</strong>：加 gte-rerank，Top-15 → Top-5。预计 +8-10。</li>
+            <li><strong>元数据过滤</strong>：如果问句含"年假 / 报销 / 社保"等关键词，按 section 过滤到对应章节再向量检索。预计 +2-3。</li>
+          </ol>
+          <p><strong>预期终局：</strong>Recall@5 ≈ 0.85-0.88，答对率 ≈ 0.82-0.85。目标达成。</p>
+          <p><strong>PM 交付话术：</strong>"我给您做了 5 步优化，每一步都有指标对账。目前 Recall@5 从 0.65 到 0.87，端到端答对率从 62% 到 84%。剩下的 15% 里，8% 是问题问得太模糊、7% 是知识库确实没有——建议下一版补 FAQ 或者兜底转人工。"</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="case-block">
+    <summary>🧪 案例 C · 诊断这三个错误案例，分别是哪个维度出了问题？（自己练）</summary>
+    <div class="case-body">
+      <p><strong>Case 1</strong>：查询"投标保证金金额"，检出 Top-1 是"第 3 章 投标保证金 · 交纳方式和退还流程说明，甲方要求乙方按招标要求提交..."（3800 字）。虽然相关但没有具体金额。</p>
+      <p><strong>Case 2</strong>：查询"招标文件里的 ESG 要求"，检出 Top-3 全是 2019-2021 年的文件，用户其实想问 2024 年的。</p>
+      <p><strong>Case 3</strong>：查询"评标办法中综合评分法的权重分配"，向量检索 Top-1 是"评标办法有综合评分法和最低价法两种..."（讲介绍，没写权重）；库里其实有一段专门讲权重的，排在 Top-8。</p>
+
+      <details style="margin-top: 12px;">
+        <summary style="cursor: pointer; color: var(--primary); font-weight: 600;">查看参考答案</summary>
+        <div style="padding: 10px 14px; background: var(--gray-50); border-radius: 6px; margin-top: 8px;">
+          <p><strong>Case 1 · 分块过大</strong>——3800 字一整块，具体金额被"稀释"在长文本里，向量相似度就低。修法：分块调到 400-500 tokens，用 Document-aware 按"第 3 章 · 第 X 条"切开。</p>
+          <p><strong>Case 2 · 元数据过滤缺失</strong>——用户明确说"2024 年"，你没用 metadata.publish_date 过滤。修法：加 parse_filters 抽年份，向量检索前先按年份过滤。</p>
+          <p><strong>Case 3 · 缺重排</strong>——向量检索是粗筛，"综合评分法"这个词表面相似度最高的往往是"讲介绍"的那段。修法：加 Reranker（gte-rerank / BGE-Reranker-v2），Top-20 粗筛后重排取 Top-5，含权重的段会被排到前面。</p>
+          <p><strong>面试金句：</strong><em>"检索答错不要着急换模型——先诊断是哪个维度的问题。分块碎调分块、噪声多加阈值、顺序乱加重排、时间/来源相关就上元数据过滤。90% 的问题都在这 5 个维度里。"</em></p>
+        </div>
+      </details>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 4：速查卡 -->
+<div class="card">
+  <h2>📇 四、速查卡</h2>
+
+  <div class="cheatsheet">
+    <div class="cs-title">🇨🇳 中文 Embedding 模型对照表</div>
+    <table>
+      <thead><tr><th>模型</th><th>维度</th><th>最大 token</th><th>中文效果</th><th>付费</th><th>一句话对比</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BGE-M3</strong></td><td>1024</td><td>8192</td><td>⭐⭐⭐⭐⭐</td><td>免费开源</td><td>综合最强，长文本友好，可自部署</td></tr>
+        <tr><td><strong>M3E-large</strong></td><td>1024</td><td>512</td><td>⭐⭐⭐⭐</td><td>免费开源</td><td>老牌好用，短文本首选</td></tr>
+        <tr><td><strong>阿里云 text-embedding-v3</strong></td><td>1024</td><td>8192</td><td>⭐⭐⭐⭐⭐</td><td>API 按量</td><td>百炼平台一站式，省运维</td></tr>
+        <tr><td>OpenAI text-embedding-3-large</td><td>3072</td><td>8191</td><td>⭐⭐⭐</td><td>API 按量</td><td>中文场景吃亏，别默认选</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px;color:var(--gray-600);"><strong>PM 选型口诀：</strong>能自部署选 BGE-M3；懒得运维选阿里云 v3；千万别默认 OpenAI。</p>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">⚙️ Chunk 与检索参数速查</div>
+    <table>
+      <thead><tr><th>参数</th><th>典型范围</th><th>政企场景推荐</th><th>调整建议</th></tr></thead>
+      <tbody>
+        <tr><td>Chunk size</td><td>128 - 1024 tokens</td><td>400-500</td><td>短了信息碎、长了语义稀释</td></tr>
+        <tr><td>Overlap</td><td>0 - 30%</td><td>10-20%</td><td>结构化分块可少，Fixed 分块必须</td></tr>
+        <tr><td>Top-K (粗筛)</td><td>5 - 50</td><td>15-20</td><td>有 Reranker 就用 15-20；无重排别 &gt; 8</td></tr>
+        <tr><td>Top-K (最终给 LLM)</td><td>3 - 8</td><td>3-5</td><td>塞太多会稀释注意力</td></tr>
+        <tr><td>相似度阈值</td><td>0.5 - 0.75</td><td>0.5-0.6</td><td>宁可漏，别混入噪声</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cheatsheet">
+    <div class="cs-title">📊 检索质量评估 SOP</div>
+    <ul style="margin-left: 24px;">
+      <li><strong>先建测试集</strong>——找 30-50 条真实用户问答对，标注"正确答案在哪个分块"。这是所有指标的前提。</li>
+      <li><strong>Recall@K</strong>：<code>命中标准答案分块的查询数 / 总查询数</code>。反映"检得到吗"。</li>
+      <li><strong>MRR</strong>：<code>平均 (1 / 标准答案排名)</code>。第 1 位命中 = 1.0，第 5 位命中 = 0.2。反映"排得靠前吗"。</li>
+      <li><strong>NDCG</strong>：给每个候选打相关性分（0-3），算加权累计。反映"高相关的排得越前越好"。</li>
+      <li><strong>端到端答对率</strong>：跑完整 RAG，让人肉判分"答得对不对"。这是<em>唯一直接跟客户对齐的指标</em>。</li>
+    </ul>
+    <p style="font-size:13px;color:var(--red);"><strong>PM 汇报口径：</strong>"我们 Recall@5 是 89%，端到端答对率 88%。剩下 12% 里 60% 是知识库确实没有、40% 是 LLM 生成时抓错重点，下一版重点攻这两块。"——这种表述比只说"效果 88%"专业 10 倍。</p>
+  </div>
+</div>
+
+<!-- 板块 5：5 题测验 -->
+<div class="card">
+  <h2>📝 五、5 题小测验</h2>
+  <p style="color: var(--gray-600); font-size: 14px;">建议先自己想 20 秒再点开答案。答错也别慌——错项解析比正确答案更值钱。</p>
+
+  <details class="quiz-item">
+    <summary>Q1 · 客户反馈 RAG 检不准，你的第一反应最不该是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 把 Top-K 从 5 调到 20 看看</li>
+        <li>B. 检查分块结果，看有没有关键信息被切开</li>
+        <li>C. 建一批测试集，先量出 Recall@5 和答对率</li>
+        <li>D. 换一个更强的 Embedding 模型试试</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：A</div>
+        <p>只调 Top-K 是治标不治本——治好召回了但塞进 LLM 的噪声也多了，答对率反而可能下降。正确顺序：先建测试集量化 → 再看分块和模型 → 加重排 → 最后才微调 Top-K。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>B 是对的第一反应</strong>——Day 7 的预处理是天花板，先排查这里。<strong>C 是最专业的第一反应</strong>——没测试集就没有量化改进，一切"感觉变好了"都是玄学。<strong>D 也可以是备选</strong>——如果是 OpenAI ada-002 的中文项目，换成 BGE-M3 或阿里云 v3 立刻能涨。但相比 A 更有针对性。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q2 · 关于 Reranker（重排模型），下面哪种说法是错的？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Reranker 通常带来 10-15 个百分点的答对率提升</li>
+        <li>B. 用法是：向量粗筛 Top-20 → 重排取 Top-5 → 给 LLM</li>
+        <li>C. Reranker 可以完全替代 Embedding，直接对每个候选打分就行</li>
+        <li>D. 中文场景推荐 BGE-Reranker-v2 或阿里云 gte-rerank</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：C</div>
+        <p>Reranker 是"精排"，性能比 Embedding 慢 10-100 倍，对每个候选都要跟 query 拼一起过一遍模型。库里几万分块不可能全走 Reranker，必须先用 Embedding 粗筛出 Top-N 再精排。<strong>两者是配合关系，不是替代</strong>。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 对</strong>——这是实践中常见的提升幅度，也是 Reranker 值得引入的理由。<strong>B 对</strong>——这是标准用法。<strong>D 对</strong>——中文场景这两个都是主流选择。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q3 · 用户问"2024 年招标文件里哪些提到 ESG"，最优的检索策略是？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. 直接把整个问句 embedding 后向量检索 Top-5</li>
+        <li>B. 先按 publish_date=2024 和 doc_type=招标 过滤，再对剩余分块做向量检索</li>
+        <li>C. 把 Top-K 调大到 30，让更多候选进 LLM</li>
+        <li>D. 让 LLM 直接扫描全库找"2024 + ESG"关键词</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：B</div>
+        <p>这是元数据过滤前置的标准场景。用户问句里明确有"2024 年"和"招标文件"两个可结构化过滤的条件——先按 metadata 过滤缩小候选池，再对剩余分块做向量检索。既提高准确率、又省算力。</p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A 是常见做法但不是最优</strong>——库里 2019-2023 年的 ESG 文档会一起被检出来，污染结果。<strong>C 只会引入更多噪声</strong>，不解决时间维度的问题。<strong>D 是最错的</strong>——LLM 没有全库扫描能力，也没这么用的。这就是 Day 7 元数据文化的价值兑现场景。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q4 · 关于 4 个检索质量指标，哪一个最适合跟外行客户汇报？</summary>
+    <div class="quiz-body">
+      <ul class="quiz-options">
+        <li>A. Recall@K</li>
+        <li>B. MRR</li>
+        <li>C. NDCG</li>
+        <li>D. 端到端答对率</li>
+      </ul>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 答案：D</div>
+        <p>端到端答对率是唯一"客户能听懂"的指标——直接对应"这个 AI 好不好用"。Recall/MRR/NDCG 都是工程指标，跟客户讲他会问"那到底对不对？"。<strong>PM 汇报口径：客户面前只讲答对率，技术复盘再拆到 Recall/MRR。</strong></p>
+      </div>
+      <div class="wrong-analysis">
+        <div class="wa-title">❌ 错项解析</div>
+        <p><strong>A Recall@K 需要解释"K 是啥"</strong>——客户听着累。<strong>B MRR 更抽象</strong>——"倒数排名"这个概念普通业务方 5 分钟解释不清。<strong>C NDCG 是最技术的</strong>——甚至技术团队都要查公式。这三个都是内部复盘用，不是对外汇报用。</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="quiz-item">
+    <summary>Q5 · 综合题——你手上的 RAG 端到端答对率 65%，客户要求 85%+，你的优化路线图应该怎么排？</summary>
+    <div class="quiz-body">
+      <p style="color: var(--gray-600); margin-bottom: 8px;">按今天学的 5 个维度设计一版计划，说清每步预期收益和排序理由。</p>
+      <div class="quiz-answer">
+        <div class="ans-title">✅ 参考答案</div>
+        <p><strong>第 0 步 · 建量化基准</strong>——先建 30-50 条测试集，跑一遍拿到当前 Recall@5、MRR、答对率。<em>没这一步后面都是玄学。</em></p>
+        <p><strong>第 1 步 · Chunk 调优</strong>——查当前分块参数。政企文档改到 400-500 tokens + 15% overlap，用 Document-aware。<em>预期 +7-10。</em></p>
+        <p><strong>第 2 步 · Embedding 选型</strong>——如果是 OpenAI ada-002 或 BGE-Base，换到 BGE-M3 或阿里云 text-embedding-v3。<em>预期 +5-8。</em></p>
+        <p><strong>第 3 步 · 相似度阈值</strong>——设 0.5-0.55，去噪。<em>预期召回微降但答对率 +2-3。</em></p>
+        <p><strong>第 4 步 · Reranker</strong>——加 gte-rerank 或 BGE-Reranker-v2。<em>预期 +8-12（单步收益最大）。</em></p>
+        <p><strong>第 5 步 · 元数据过滤</strong>——分析用户问句里能不能抽出时间 / 类型 / 来源关键词，前置过滤。<em>预期 +2-4。</em></p>
+        <p><strong>预期终局：</strong>65% → 85%+（假设每步收益按预估叠加，实际会有 10-20% 折损，但达标概率高）。</p>
+        <p><strong>面试金句：</strong><em>"RAG 优化不是玄学——先建测试集、按顺序调 5 个维度、每一步都能量化收益。这个套路我在两个国网项目里都跑通过。"</em></p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- 板块 6：面试金句 + 心得笔记 -->
+<div class="card">
+  <h2>💼 六、面试金句预埋</h2>
+
+  <div class="interview-quote">
+    <span class="iq-tag">检索决定天花板</span>
+    "RAG 系统里，<strong>检索是天花板、生成是执行者</strong>。检索检不到，LLM 再牛也是编。我做 RAG 优化的顺序永远是先建测试集，再一步一步动 chunk / embedding / 阈值 / 重排 / 元数据过滤——五个维度，每一步都能量化收益。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">优化顺序意识</span>
+    "很多同学一遇到检索不准就调 Top-K，其实这是最后一步。我的顺序是<strong>分块 → 嵌入模型 → 阈值 → 重排 → 元数据过滤</strong>——因为分块是天花板，模型是基础，重排单步收益最大。Top-K 只在最后微调，早调只会掩盖问题。"
+  </div>
+
+  <div class="interview-quote">
+    <span class="iq-tag">元数据前置</span>
+    "元数据过滤是 RAG 最被低估的优化——用户问'2024 年'的东西，你却让向量在 2019-2023 年的文档里挣扎。<strong>能用结构化字段解决的，别让向量硬拼</strong>。这一步单步收益不一定最大，但成本最低、最容易见效，是 PM 汇报的性价比之王。"
+  </div>
+
+  <h3>📓 心得笔记</h3>
+  <div class="box box-red">
+    <div class="box-title">⚠️ 今天最反直觉的 3 件事</div>
+    <div>
+      <p><strong>1.</strong> Top-K 调大不是万能药——召回涨了、噪声也进来了，端到端答对率可能反而下降。<em>（先建测试集才有话说。）</em></p>
+      <p><strong>2.</strong> 中文场景默认用 OpenAI embedding 是<strong>最大坑</strong>——中文场景 BGE-M3 或阿里云 v3 完胜。</p>
+      <p><strong>3.</strong> Reranker 是"性价比之王"——加一个模型就涨 10-15 个百分点，比调其他任何参数都值。<em>（除非你已经加过了。）</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  学习笔记 · 【学习主题】 · Day 【N】<br>
+  下一站 → Day 【N+1】【下一节主题】
+</div>
+
+</div>
+</body>
+</html>
